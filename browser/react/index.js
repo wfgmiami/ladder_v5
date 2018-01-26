@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 // import SingleStock from './SingleStock';
 
 import App from './App';
-
+import Smartpm from './Smartpm';
 const root = document.getElementById('app');
 
 const route = (
@@ -14,9 +14,9 @@ const route = (
       <Route exact path="/" component={App} />
       <Route
         exact
-        path="/api/quote/:symbol"
+        path="/smartpm"
         render={router => (
-          <App router={router} />
+          <Smartpm router={router} />
 			)}
       />
     </Switch>

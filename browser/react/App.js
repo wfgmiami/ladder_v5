@@ -9,7 +9,7 @@ import InvestedAmount from './InvestedAmount';
 import BucketAllocation from './BucketAllocation';
 import BucketSummary from './BucketSummary';
 import PortfolioSummary from './PortfolioSummary';
-import muniList from '../../muniData.json';
+import muniList from '../../muni.json';
 import BucketSummaryPlaceholder from './BucketSummaryPlaceholder';
 import css from '../../assets/stylesheets/style.scss';
 

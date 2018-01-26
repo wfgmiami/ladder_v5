@@ -54,7 +54,7 @@ class Nav extends React.Component {
                       <span className="icon-bar" />
                       <span className="icon-bar" />
                     </button>
-                    <h4 style={{ marginLeft: '7px' }}><b><span style={{ fontSize: '22' }}>M</span>UNI <span style={{ fontSize: '22' }}>L</span>ADDER <span style={{ fontSize: '22' }}>A</span>LLOCATION</b></h4>
+					<h4 style={{ marginLeft: '7px' }}><b><span style={{ fontSize: '22' }}>M</span>UNI <span style={{ fontSize: '22' }}>L</span>ADDER <span style={{ fontSize: '22' }}>A</span>LLOCATION</b></h4> 
                 </div>
               </div>
 

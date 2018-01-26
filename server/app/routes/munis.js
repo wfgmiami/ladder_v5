@@ -5,16 +5,16 @@ const fs = require('fs');
 module.exports = router;
 const currentYear = new Date().getFullYear();
 
-//const muniData = require( '../../../muniList_0109.json');
+//const muniData = require( '../../../smas.json');
 //const adjustedMuniData = createNewObject( muniData );
 
- //fs.writeFile( './muniData.json', JSON.stringify( adjustedMuniData ), 'utf-8', function( err ) {
+//fs.writeFile( './sma.json', JSON.stringify( adjustedMuniData ), 'utf-8', function( err ) {
 //	if ( err ) throw err;
 //	console.log('done')
 //})
 
 
-const adjustedMuniData = require( '../../../muniData.json');
+const adjustedMuniData = require( '../../../muni.json');
 
 router.get('/', (req, res, next) =>{
 	res.send( adjustedMuniData );
@@ -64,6 +64,14 @@ function createNewObject(arr) {
 		obj.ed = muni.EffectiveDuration;
 		obj.md = muni.ModifiedDuration;
 		obj.ytw = muni.YieldToWorst;
+		if( muni.NAME ){
+			obj.account = muni.NAME;
+			obj.size = muni.ACCOUNT_SIZE;
+			obj.par = muni.PAR_AMT;
+			let matRng = muni.MAT_RANGE.split("-");
+			obj.minMaturity = matRng[0];
+			obj.maxMaturity = matRng[1];
+		}
 		munis.push(obj);
 		obj= {};
 	})
