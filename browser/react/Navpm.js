@@ -11,15 +11,27 @@ class Navpm extends React.Component {
 
     this.state = {
       collapsed: true,
-	  accounts: ['aaa','bbb','ccc'],
- 	  
+	    accounts: [],
     }
+
     this.toggleNavbar = this.toggleNavbar.bind(this);
-	this.onAccountChange = this.onAccountChange.bind(this);
+	  this.onAccountChange = this.onAccountChange.bind(this);
+  }
+
+  componentWillMount(){
+		this.setState({ accounts: this.props.accounts });
+	}
+
+	componentWillReceiveProps( nextProps ){
+		if( nextProps.accounts !== this.state.accounts ){
+			this.setState( { accounts: nextProps.accounts } );
+		}
   }
 
   onAccountChange = (e) => {
-	this.props.onAccountChange(e.target.value);
+    let account = e.target.value;
+    this.setState( { account })
+	  this.props.handleAccountChange(e.target.value);
   }
 
   toggleNavbar(){
@@ -29,11 +41,11 @@ class Navpm extends React.Component {
   }
 
   render() {
-
+    console.log('NAVPM STATE.............', this.props, this.state)
     const collapsed = this.state.collapsed;
     const classOne = collapsed ? 'collapse navbar-collapse' : 'collapse navbar-collapse show';
     const classTwo = collapsed ? 'navbar-toggle navbar-toggle-right collapsed' : 'navbar-toggle navbar-togler-right';
-	const accounts = this.state.accounts;
+	  const accounts = this.state.accounts;
 
 	return (
       <div>
@@ -48,26 +60,28 @@ class Navpm extends React.Component {
                       <span className="icon-bar" />
                       <span className="icon-bar" />
                     </button>
-					<h4 style={{ marginLeft: '7px' }}><b><span style={{ fontSize: '22' }}>SmartPM</span></b></h4> 
+					<h4 style={{ marginLeft: '7px' }}><b><span style={{ fontSize: '22' }}>SmartPM</span></b></h4>
                 </div>
               </div>
 
               <div className={ `${ classOne }` } id="navbarResponsive">
-                <div className="col-sm-2" style={{ paddingLeft: '5%'}}>
-                <p><b>Select Account</b></p>
+                <div className="col-sm-3" style={{ paddingLeft: '5%'}}>
+                <span><b>Select Account:</b></span>&nbsp;
+                <span>
                   <select style={{ width: '55%', display:'inline' }} className='form-control' onChange = { this.onAccountChange }>
-            { accounts.map( ( account, idx ) => (
+            { accounts.length > 0 && accounts.map( ( account, idx ) => (
                     <option key = { idx } value = { account }>{ account }</option>
             ))}
                   </select>
+                 </span>
                 </div>
-                <div className="col-sm-5">
-                   <p><b>Minimum Maturity:</b></p>
-				   <p><b>Maximum Maturity:</b></p>
+                <div className="col-sm-4">
+                  <p><b>Min Maturity:&nbsp;{ this.props.minMaturity }</b></p>
+				          <p><b>Max Maturity:&nbsp;{ this.props.maxMaturity }</b></p>
                 </div>
 
                 <div className="col-sm-4">
-                  <p><b>Invested Amount:</b></p>
+                  <p><b>Invested Amount:&nbsp;{ this.props.investedAmount }</b></p>
                 </div>
               </div>
 

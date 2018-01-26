@@ -5,13 +5,13 @@ const fs = require('fs');
 module.exports = router;
 const currentYear = new Date().getFullYear();
 
-//const muniData = require( '../../../smas.json');
-//const adjustedMuniData = createNewObject( muniData );
+// const muniData = require( '../../../smas.json');
+// const adjustedMuniData = createNewObject( muniData );
 
-//fs.writeFile( './sma.json', JSON.stringify( adjustedMuniData ), 'utf-8', function( err ) {
-//	if ( err ) throw err;
-//	console.log('done')
-//})
+// fs.writeFile( './sma.json', JSON.stringify( adjustedMuniData ), 'utf-8', function( err ) {
+// 	if ( err ) throw err;
+// 	console.log('done')
+// })
 
 
 const adjustedMuniData = require( '../../../muni.json');
@@ -53,7 +53,7 @@ function createNewObject(arr) {
 		if( dt.length == 3 )	obj.maturity = dt[0] + '/' + dt[1] + '/' + dt[2].slice(-2);
 		else obj.maturity = '';
 		let maturityYear = muni['Stated Maturity'].slice(-4);
-		obj.ytm = maturityYear - currentYear;
+		obj.ytm = maturityYear - (currentYear-1) ;
 		if (obj.ytm < 0) obj.ytm = 0;
 		obj.sector = muni['Holdings Sector'];
 		obj.rating = muni['Opinion Internal Rating'];

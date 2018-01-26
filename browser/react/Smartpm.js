@@ -20,9 +20,9 @@ class Smartpm extends Component {
     super(props);
 
     this.state = {
-			munis:[],
-			ytmLadder:[],
-			rankedMuniList:[],
+			munis: [],
+			smas:{},
+			bucketColumns:{},
 			allocatedData: [],
 			allocSector: {},
 			allocRating: {},
@@ -32,14 +32,18 @@ class Smartpm extends Component {
 			bucketsSummary: [],
 			portfolioSummary: [],
 			minMaturity: {},
-			maxMaturity: {}
+			maxMaturity: {},
+			accounts: [],
+			amt: 0,
+			min: 0,
+			max: 0
 	};
 
 	this.createRows = this.createRows.bind(this);
 	this.createColumns = this.createColumns.bind(this);
 	this.createSummary = this.createSummary.bind(this);
  	this.createObject = this.createObject.bind(this);
-	this.handleAccountChange = this.handleAccountChange(this);
+	this.handleAccountChange = this.handleAccountChange.bind(this);
   }
 
   componentDidMount() {
@@ -48,93 +52,109 @@ class Smartpm extends Component {
 	});
   }
 
-  handleAccountChange(){
-	
+  handleAccountChange( reqAccount ){
+
+		const sma = this.state.smas;
+		const bucketColumns = this.state.bucketColumns;
+		const investedAmount = this.state.investedAmount;
+
+		if( bucketColumns[reqAccount] ){
+			const bucketsInAccount = bucketColumns[reqAccount].sort( function(a,b) { return a - b } );
+			let accountCash = sma[reqAccount]['allocSector'].Cash;
+
+			let summary = { allocSector: sma[reqAccount]['allocSector'], allocState: sma[reqAccount]['allocState'], allocRating: sma[reqAccount]['allocRating'] };
+
+			const bucketsSummary = this.createSummary( summary, sma[reqAccount]['allocSectorByStates'], investedAmount[reqAccount] );
+			const bucketsByRows = this.createRows( sma[reqAccount]['allocatedData'], investedAmount[reqAccount], accountCash );
+			const columns = this.createColumns( bucketsInAccount );
+
+			this.setState( { min: this.state.minMaturity[reqAccount] } );
+			this.setState( { max: this.state.maxMaturity[reqAccount] } );
+			this.setState( { amt: this.state.investedAmount[reqAccount] } );
+			this.setState( { columns } );
+			this.setState( { bucketsByRows } );
+			this.setState( { bucketsSummary } );
+		}
+
   }
 
   createObject( ){
-	let munis = this.state.munis;
-	let sma = {};
-	let smaList = [];
-	let bond = {};
-	let objRating = null;
-	let investedAmount = {};
-	let minMaturity = {};
-	let maxMaturity = {};
-	let bucketColumns = {};
-debugger;
-	munis.forEach( obj => {
-	
-				if( !sma[obj.account] ){
-		   			sma[obj.account] = { allocSector: {}, allocState: {} , allocRating: {}, allocSectorByStates: {}, allocatedData: {} };
-					investedAmount[obj.account] = obj.size;
-					minMaturity[obj.account] = obj.minMaturity;
-					maxMaturity[obj.account] = obj.maxMaturity;
+		let munis = this.state.munis;
+		let sma = {};
+		let bond = {};
+		let objRating = null;
+		let investedAmount = {};
+		let minMaturity = {};
+		let maxMaturity = {};
+		let bucketColumns = {};
+		let accounts = [];
+
+		debugger;
+
+		munis.forEach( obj => {
+			if( !sma[obj.account] ){
+					sma[obj.account] = { allocSector: {}, allocState: {} , allocRating: {}, allocSectorByStates: {}, allocatedData: {} };
+				investedAmount[obj.account] = obj.size;
+				minMaturity[obj.account] = obj.minMaturity;
+				maxMaturity[obj.account] = obj.maxMaturity;
+				accounts.push(obj.account);
+			}
+
+			if( obj.cusip === "CASHUSD" ){
+				sma[obj.account]['allocSector'].Cash = obj.par;
+			}else{
+				if( obj.rating === '' ) objRating = 'B';
+				else objRating = obj.rating;
+				let state = obj.state;
+				let sector = obj.sector;
+
+				let investAmt = Number( ( obj.par * obj.price / 100 ) ).toFixed(2);
+				investAmt = investAmt * 1;
+				bond = { coupon: obj.coupon, cusip: obj.cusip, ed: obj.ed, investAmt: investAmt, lastTraded: obj.lastTraded,
+							maturity: obj.maturity, md: obj.md, price: obj.price, rating: objRating, sector: obj.sector, state: obj.state, ytm: obj.ytm, ytw: obj.ytw };
+
+				if( sma[obj.account]['allocatedData'][obj.ytm] ){
+					sma[obj.account]['allocatedData'][obj.ytm].push( bond );
+					if( bucketColumns[obj.account].indexOf( obj.ytm * 1 ) === -1 ) bucketColumns[obj.account].push( obj.ytm * 1 );
+				}else{
+					bucketColumns[obj.account] ? bucketColumns[obj.account].push( obj.ytm * 1 ) : bucketColumns[obj.account] = [obj.ytm * 1];
+					sma[obj.account]['allocatedData'][obj.ytm] = [bond];
 				}
 
-				if( obj.cusip === "CASHUSD" ){
-					sma[obj.account]['allocSector'].Cash = obj.par;	
-				}else{
-					if( obj.rating === '' ) objRating = 'B';
-					else objRating = obj.rating;
-					let state = obj.state;
-					let sector = obj.sector;
-
-					let investAmt = Number( ( obj.par * obj.price / 100 ) ).toFixed(2);
-					investAmt = investAmt * 1;
-					bond = { coupon: obj.coupon, cusip: obj.cusip, ed: obj.ed, investAmt: investAmt, lastTraded: obj.lastTraded,
-					   		maturity: obj.maturity, md: obj.md, price: obj.price, rating: objRating, sector: obj.sector, state: obj.state, ytm: obj.ytm, ytw: obj.ytw };	
-	
-					if( sma[obj.account]['allocatedData'][obj.ytm] ){
-						sma[obj.account]['allocatedData'][obj.ytm].push( bond );
-						if( bucketColumns[obj.account].indexOf( obj.ytm * 1 ) === -1 ) bucketColumns[obj.account].push( obj.ytm );  
-					}else{
-						bucketColumns[obj.account] = [obj.ytm * 1];	
-						sma[obj.account]['allocatedData'][obj.ytm] = [bond];
-					}
-
-					if( sma[obj.account]['allocState'][state] ){
-						sma[obj.account]['allocState'][state] += investAmt; 
+				if( sma[obj.account]['allocState'][state] ){
+					sma[obj.account]['allocState'][state] += investAmt;
 					}else{
 						sma[obj.account]['allocState'][state] = investAmt;
-					}	
+					}
 
 					if( sma[obj.account]['allocSector'][sector] ){
-						sma[obj.account]['allocSector'][sector] += investAmt; 
+						sma[obj.account]['allocSector'][sector] += investAmt;
 					}else{
 						sma[obj.account]['allocSector'][sector] = investAmt;
-					}	
-				
+					}
+
 					if( obj.rating.slice(0,2) !== 'AA' ){
 						sma[obj.account]['allocRating']['aAndBelow'] ? sma[obj.account]['allocRating']['aAndBelow'] += investAmt : sma[obj.account]['allocRating']['aAndBelow'] = investAmt;
-					}	
+					}
 
 					if( sma[obj.account]['allocSectorByStates'][state] ){
-						sma[obj.account]['allocSectorByStates'][state][sector] ? sma[obj.account]['allocSectorByStates'][state][sector] += investAmt : sma[obj.account]['allocSectorByStates'][state][sector] = investAmt; 
+						sma[obj.account]['allocSectorByStates'][state][sector] ? sma[obj.account]['allocSectorByStates'][state][sector] += investAmt : sma[obj.account]['allocSectorByStates'][state][sector] = investAmt;
 					}else{
-						 sma[obj.account]['allocSectorByStates'][state] = {}; 
-						 sma[obj.account]['allocSectorByStates'][state][sector] = investAmt; 
+							sma[obj.account]['allocSectorByStates'][state] = {};
+							sma[obj.account]['allocSectorByStates'][state][sector] = investAmt;
 					}
 
 				}
-	})
-	
-	let reqAccount = 'ARMALI';
-	let bucketsInAccount = bucketColumns[reqAccount].sort( function(a,b) { return a - b } );
 
-	let summary = { allocSector: sma[reqAccount]['allocSector'], allocState: sma[reqAccount]['allocState'], allocRating: sma[reqAccount]['allocRating'] };
-	const bucketsSummary = this.createSummary( summary, sma[reqAccount]['allocSectorByStates'], investedAmount[reqAccount] );
-	const bucketsByRows = this.createRows( sma[reqAccount]['allocatedData'], investedAmount[reqAccount] );
-	const columns = this.createColumns( bucketsInAccount );
-	this.setState( { investedAmount } );
-	this.setState( { minMaturity } );
-	this.setState( { maxMaturity } );
-console.log('............................./////////////', this.state);
-	this.setState( { columns } );
-	this.setState( { bucketsByRows } );
-	this.setState( { bucketsSummary } );
-  }
- 
+				this.setState( { bucketColumns } );
+				this.setState( { smas: sma } )
+				this.setState( { investedAmount } );
+				this.setState( { minMaturity } );
+				this.setState( { maxMaturity } );
+				this.setState( { accounts } );
+			})
+  	}
+
 
 	createSummary( summary, allocSectorByState, investedAmount ){
 		let groups = Object.keys( summary );
@@ -234,7 +254,7 @@ console.log('............................./////////////', this.state);
 			})
 
 		})
-		//let result = arrangedPortfolioSummary.concat(arr);
+
 		return result.concat(arr);
 
 	}
@@ -250,7 +270,7 @@ console.log('............................./////////////', this.state);
 		return columns;
 	}
 
-	createRows( objBuckets, investedAmount ){
+	createRows( objBuckets, investedAmount, accountCash ){
 
 		const buckets = Object.keys( objBuckets );
 		const numBuckets = buckets.length;
@@ -266,7 +286,6 @@ console.log('............................./////////////', this.state);
 		let totalInBucket = 0;
 		let bucketIndex = buckets[0];
 		let numBonds = 0;
-		let cashPosition = 0;
 		let avgEffDuration = 0;
 		let avgModDuration = 0;
 		let avgPrice = 0;
@@ -302,12 +321,7 @@ console.log('............................./////////////', this.state);
 
 					if( bond ){
 						if( j === 0 ){
-							if( bond.cusip === 'Cash' ){
-								row[(k).toString()] = bond.cusip + ': $' + bond.investAmt.toLocaleString();
-								cashPosition += bond.investAmt;
-							}else{
-								row[(k).toString()] = bond.cusip + ', ' + bond.coupon + '%, ' + bond.maturity;
-							}
+							row[(k).toString()] = bond.cusip + ', ' + bond.coupon + '%, ' + bond.maturity;
 						}else if( j === 1 && bond.cusip !== 'Cash' ){
 							row[(k).toString()] = bond.state + ', ' + bond.sector + ', ' + bond.rating;
 
@@ -321,7 +335,7 @@ console.log('............................./////////////', this.state);
 								row[(k).toString()] = bond.lastTraded + ', ' + bond.price;
 						}else if( j === 3 && bond.cusip !== 'Cash' ){
 							let par = Number( (bond.investAmt / ( bond.price / 100 ) ).toFixed(0) / 1000 ).toLocaleString() + 'k';
-							let percPos = Number( ( bond.investAmt / this.state.investedAmount * 100 ) ).toFixed(2).toLocaleString();
+							let percPos = Number( ( bond.investAmt / investedAmount * 100 ) ).toFixed(2).toLocaleString();
 							row[(k).toString()] = '$' + bond.investAmt.toLocaleString() + ', ' + par + ', ' + percPos + "%";
 						}
 					}
@@ -345,21 +359,21 @@ console.log('............................./////////////', this.state);
 			tradeDateRange = minTdDate + ' - ' + maxTdDate;
 		}
 
-		avgEffDuration = Number( avgEffDuration / ( this.state.investedAmount - cashPosition ) ).toFixed(2);
+		avgEffDuration = Number( avgEffDuration / ( investedAmount - accountCash ) ).toFixed(2);
 		if( isNaN( avgEffDuration ) ) avgEffDuration = '';
-		avgModDuration = Number( avgModDuration / ( this.state.investedAmount - cashPosition ) ).toFixed(2);
+		avgModDuration = Number( avgModDuration / ( investedAmount - accountCash ) ).toFixed(2);
 		if( isNaN( avgModDuration ) ) avgModDuration = '';
-		avgYtw = Number( avgYtw / ( this.state.investedAmount - cashPosition ) ).toFixed(2);
+		avgYtw = Number( avgYtw / ( investedAmount - accountCash ) ).toFixed(2);
 		if( isNaN( avgYtw ) ) avgYtw = '';
 		else avgYtw = avgYtw + '%';
-		avgCoupon = Number( avgCoupon / ( this.state.investedAmount - cashPosition ) ).toFixed(2);
+		avgCoupon = Number( avgCoupon / ( investedAmount - accountCash ) ).toFixed(2);
 		if( isNaN( avgCoupon ) ) avgCoupon = '';
 		else avgCoupon = avgCoupon + '%';
-		avgPrice = Number( avgPrice / ( this.state.investedAmount - cashPosition ) ).toFixed(2);
+		avgPrice = Number( avgPrice / ( investedAmount - accountCash ) ).toFixed(2);
 		if( isNaN( avgPrice ) ) avgPrice = '';
-		cashPosition = '$' +  Number(cashPosition.toFixed(2)).toLocaleString();
+		accountCash = '$' +  Number(accountCash.toFixed(2)).toLocaleString() + " | " + Number(accountCash/investedAmount*100).toFixed(2) + '%';
 
-		portfolioSummary.push( { avgPrice, avgCoupon, yieldToWorst: avgYtw, modifiedDuration: avgModDuration, effectiveDuration: avgEffDuration, cash: cashPosition, numberOfBonds: numBonds, portfolioSize, tradeDateRange } );
+		portfolioSummary.push( { avgPrice, avgCoupon, yieldToWorst: avgYtw, modifiedDuration: avgModDuration, effectiveDuration: avgEffDuration, cash: accountCash, numberOfBonds: numBonds, portfolioSize, tradeDateRange } );
 
 		this.setState( { portfolioSummary } );
 		bucketsByRows.push( totalByBucket );
@@ -369,11 +383,11 @@ console.log('............................./////////////', this.state);
    render() {
  	 console.log('.....in App.js, this.state',this.state)
 
-//    const munis = [...this.state.munis];
     return (
       <div className="container-fluid">
-        <Navpm handleAccountChange = { this.handleAccountChange } />
-          <div style={{ marginTop: '135px' }} className="row">
+       <Navpm accounts = { this.state.accounts } minMaturity = { this.state.min } maxMaturity = { this.state.max } investedAmount = { this.state.amt.toLocaleString() } handleAccountChange = { this.handleAccountChange } />
+
+          <div style={{ marginTop: '70px' }} className="row">
 			<PortfolioSummary portfolioSummary = { this.state.portfolioSummary } />
 			{ this.state.bucketsByRows.length !== 0 ?
 				<div className="col-sm-8">
